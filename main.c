@@ -15,6 +15,15 @@ typedef struct {
 } bint;
 
 
+void printBigInt(const bint* num) {
+    for (size_t i = 0; i < NUM_BLOCKS; ++i) {
+        printf("[%08X] ", num->blocks[i]);
+    }
+    printf("\n");
+    printf("hex: %s\n", num->hex);
+    printf("Size: %ld\n", num->num_bits / 4);
+}
+
 void initBigInt(bint* num, const char* hex) {
     memset(num->blocks, 0, sizeof(num->blocks));
     num->num_bits = 0;
@@ -31,6 +40,7 @@ uint32_t get_value(char c) {
     else if (c >= 'a' && c <= 'f') {
         return c - 'a' + 10;
     } else {
+        printf("Invalid hex string\n");
         exit(1); // exit program
     }
 }
@@ -42,36 +52,56 @@ void parseBigIntFromHex(bint* num, const char* hex) {
     size_t wordIndex = 0;
     size_t bitPos = 0;
 
-    for (int i = len - 1; i >= 0; --i) {
+    for (int i = len-1; i >= 0; i--) {
+        // 1A*110000BC*FFFF0011 <=> [FFFF0011, 110000BC, 0000001A, ..., 00000000]
         char c = hex[i];
         uint32_t value = get_value(c);
 
-        num->blocks[wordIndex] <<= 4;
-        (num->blocks[wordIndex]) |= value;
+        (num->blocks[wordIndex]) |= (value << bitPos);
         bitPos += 4; // Each hex digit is 4 bits
+
         if (bitPos >= WORD_SIZE) {
             bitPos = 0;
             wordIndex++;
             if (wordIndex >= NUM_BLOCKS) {
                 printf("Hex string exceeds maximum supported size.\n");
-                return;
+                exit(1);
             }
         }
     }
     num->num_bits = len * 4; // Each hex digit contributes 4 bits
 }
 
-void printBigInt(const bint* num) {
-    for (size_t i = 0; i < NUM_BLOCKS; ++i) {
-        printf("[%08X] ", num->blocks[i]);
+void addBigInt(const bint* a, const bint* b, bint* result) {
+    uint64_t carry = 0; // Use 64 bits to handle overflow
+
+    for (int i = 0; i < NUM_BLOCKS - 1; i++) { // Start from least significant block
+        uint64_t sum = (uint64_t)a->blocks[i] + (uint64_t)b->blocks[i] + carry;
+        result->blocks[i] = (uint32_t)(sum & 0xFFFFFFFF); // Store lower 32 bits
+        carry = sum >> 32; // Upper 32 bits becomes carry
     }
-    printf("\n");
-    printf("hex: %s\n", num->hex);
+
+    if (carry != 0) {
+        printf("Overflow in addition\n");
+        exit(1); // Handle overflow
+    }
+
+    result->num_bits = a->num_bits > b->num_bits ? a->num_bits : b->num_bits;
 }
 
+
 int main() {
-    bint num;
-    parseBigIntFromHex(&num, "1A110000BC");
-    printBigInt(&num);
+    bint n1, n2, sum;
+    char s1[100], s2[100];
+
+    scanf("%s %s", s1, s2);
+    parseBigIntFromHex(&n1, s1);
+    parseBigIntFromHex(&n2, s2);
+    printBigInt(&n1);
+    printBigInt(&n2);
+
+    addBigInt(&n1, &n2, &sum);
+    printBigInt(&sum);
+
     return 0;
 }
