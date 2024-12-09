@@ -5,6 +5,23 @@
 
 #include "bint.h"
 
+// Function to initialize a matrix of big integers
+void initMatrix(bint matrix[][NUM_BLOCKS], size_t rows, size_t cols) {
+    for (size_t i = 0; i < rows; ++i) {
+        for (size_t j = 0; j < cols; ++j) {
+            initBigInt(&matrix[i][j]);
+        }
+    }
+}
+
+// Function to print a matrix of big integers
+void printMatrix(bint matrix[][NUM_BLOCKS], size_t rows, size_t cols) {
+    for (size_t i = 0; i < rows; ++i) {
+        for (size_t j = 0; j < cols; ++j) {
+            printBigInt(&matrix[i][j]);
+        }
+    }
+}
 
 // Matrix multiplication function (big integers)
 void multiplyMatrices(bint A[][NUM_BLOCKS], size_t A_rows, size_t A_cols,
